@@ -71,3 +71,7 @@ def main(argv: list[str] | None = None) -> None:
     _print_timeline(store, result.session_id)
     label = "BLOCKED" if result.blocked else "ALLOWED"
     print(f"\nVerdict: {label} | session={result.session_id} | observed_events={result.event_count}")
+
+
+if __name__ == "__main__":
+    main()
