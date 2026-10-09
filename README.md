@@ -87,6 +87,26 @@ network:
   block_unknown_after_sensitive_access: true
 ```
 
+## Run the prototype
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -e '.[dev]'
+
+# A harmless agent-originated action
+.venv/bin/originfence demo safe
+
+# A controlled sensitive-file-access event that OriginFence blocks
+.venv/bin/originfence demo blocked
+
+# Inspect the recorded local event timeline
+.venv/bin/originfence dashboard
+```
+
+The dashboard runs locally at `http://127.0.0.1:8000`. The blocked demo uses
+only a committed fake credential fixture; it does not read real credentials or
+send data to an external endpoint.
+
 ## Status
 
 🚧 Active hackathon prototype
