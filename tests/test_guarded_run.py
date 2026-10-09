@@ -1,5 +1,5 @@
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from originfence.monitor import run_guarded_command
 from originfence.policy import PolicyConfig, PolicyEngine

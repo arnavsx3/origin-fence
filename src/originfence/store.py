@@ -6,7 +6,7 @@ import json
 import sqlite3
 from pathlib import Path
 
-from originfence.models import Decision, EventKind, RuntimeEvent, Verdict
+from originfence.models import Decision
 
 
 class EventStore:
