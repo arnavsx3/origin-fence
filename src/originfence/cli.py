@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -64,12 +65,18 @@ def main(argv: list[str] | None = None) -> None:
                 "127.0.0.1",
                 "--server.port",
                 str(arguments.port),
+                "--server.headless=true",
                 "--browser.gatherUsageStats=false",
                 "--",
                 "--database",
                 str(arguments.database),
             ],
             check=False,
+            env={
+                **os.environ,
+                "STREAMLIT_SERVER_HEADLESS": "true",
+                "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
+            },
         )
         return
     if arguments.command == "demo":
