@@ -25,6 +25,10 @@ def build_parser() -> argparse.ArgumentParser:
     demo = subcommands.add_parser("demo", help="run a controlled local demo")
     demo.add_argument("scenario", choices=["safe", "blocked"])
     demo.add_argument("--database", type=Path, default=Path("data/originfence.sqlite3"))
+
+    dashboard = subcommands.add_parser("dashboard", help="open the local event dashboard")
+    dashboard.add_argument("--database", type=Path, default=Path("data/originfence.sqlite3"))
+    dashboard.add_argument("--port", type=int, default=8000)
     return parser
 
 
@@ -46,6 +50,13 @@ def _print_timeline(store: EventStore, session_id: str) -> None:
 def main(argv: list[str] | None = None) -> None:
     """Run a guarded command or one of the project-owned demo scenarios."""
     arguments = build_parser().parse_args(argv)
+    if arguments.command == "dashboard":
+        import uvicorn
+
+        from originfence.web import create_app
+
+        uvicorn.run(create_app(arguments.database), host="127.0.0.1", port=arguments.port)
+        return
     if arguments.command == "demo":
         policy_path, command = _demo_command(arguments.scenario)
     else:
