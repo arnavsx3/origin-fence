@@ -64,6 +64,7 @@ def main(argv: list[str] | None = None) -> None:
                 "127.0.0.1",
                 "--server.port",
                 str(arguments.port),
+                "--browser.gatherUsageStats=false",
                 "--",
                 "--database",
                 str(arguments.database),
