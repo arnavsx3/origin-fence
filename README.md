@@ -56,7 +56,7 @@ SQLite event store + local dashboard
 ## Planned stack
 
 - Python 3.11
-- FastAPI and WebSockets
+- Streamlit dashboard
 - SQLite
 - `strace` for prototype syscall tracing
 - `psutil` for process-tree management

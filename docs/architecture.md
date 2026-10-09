@@ -19,7 +19,7 @@ session launcher ──► runtime monitor ──► normalised events
                      │                                               │
                      └───────────────────────┬───────────────────────┘
                                              ▼
-                                  SQLite event store + dashboard
+                                  SQLite event store + Streamlit dashboard
 ```
 
 ## Prototype boundary
