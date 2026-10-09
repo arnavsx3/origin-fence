@@ -14,6 +14,14 @@ from originfence.monitor import run_guarded_command
 from originfence.policy import PolicyEngine
 from originfence.store import EventStore
 
+_RESET = "\033[0m"
+_BOLD = "\033[1m"
+_DIM = "\033[2m"
+_GREEN = "\033[32m"
+_RED = "\033[31m"
+_YELLOW = "\033[33m"
+_CYAN = "\033[36m"
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Create the small command surface needed by the proof of concept."""
@@ -42,14 +50,45 @@ def _demo_command(scenario: str) -> tuple[Path, list[str]]:
     return policy, [sys.executable, str(script)]
 
 
-def _print_timeline(store: EventStore, session_id: str) -> None:
-    print("\nOriginFence event timeline")
-    print("=" * 72)
+def _style(text: str, *codes: str) -> str:
+    """Add terminal colour only when the caller can render it."""
+    if not sys.stdout.isatty():
+        return text
+    return f"{''.join(codes)}{text}{_RESET}"
+
+
+def _verdict_display(verdict: str) -> str:
+    """Return a compact verdict label for the security timeline."""
+    labels = {
+        "allow": ("✓ ALLOW", _GREEN),
+        "ask": ("? ASK", _YELLOW),
+        "block": ("✕ BLOCK", _RED),
+    }
+    label, colour = labels[verdict]
+    return _style(label, _BOLD, colour)
+
+
+def _print_timeline(store: EventStore, session_id: str) -> int:
+    """Print a concise, presentation-ready incident timeline."""
+    visible_events = []
     for item in store.timeline(session_id):
         if not is_security_relevant(item["kind"], item["target"], item["verdict"]):
             continue
-        print(f"{item['kind']:18} {item['verdict'].upper():5}  {item['target'] or ''}")
-        print(f"  {item['reason']}")
+        visible_events.append(item)
+
+    print(f"\n{_style('🛡  ORIGINFENCE INCIDENT REPORT', _BOLD, _CYAN)}")
+    print(_style("─" * 68, _DIM))
+    print(f"Session  {session_id}")
+    print(f"Timeline {len(visible_events)} security-relevant actions")
+    print(_style("─" * 68, _DIM))
+    for number, item in enumerate(visible_events, start=1):
+        action = item["kind"].replace("_", " ").title()
+        target = item["target"] or "—"
+        print(f"{number:02d}  {_verdict_display(str(item['verdict']))}  {action}")
+        print(f"    {_style(str(target), _BOLD)}")
+        print(f"    {_style(str(item['reason']), _DIM)}")
+
+    return len(visible_events)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -96,12 +135,16 @@ def main(argv: list[str] | None = None) -> None:
     store = EventStore(arguments.database)
     policy = PolicyEngine(load_policy(policy_path))
     result = run_guarded_command(command, policy, store)
-    _print_timeline(store, result.session_id)
+    visible_event_count = _print_timeline(store, result.session_id)
     label = "BLOCKED" if result.blocked else "ALLOWED"
+    label_colour = _RED if result.blocked else _GREEN
+    action = "Monitored process group terminated" if result.blocked else "No containment action required"
+    print(_style("─" * 68, _DIM))
     print(
-        f"\nVerdict: {label} | session={result.session_id} | "
-        f"captured_trace_events={result.captured_event_count} | "
-        f"security_events={result.security_event_count}"
+        f"{_style('FINAL VERDICT', _BOLD)}  {_style(label, _BOLD, label_colour)}\n"
+        f"Evidence       {result.captured_event_count} trace events captured · "
+        f"{visible_event_count} security-relevant\n"
+        f"Containment    {action}"
     )
 
 

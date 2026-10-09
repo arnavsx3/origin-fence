@@ -92,6 +92,8 @@ def run_guarded_command(
         event = parse_strace_line(session_id, line)
         if event is None:
             continue
+        if blocked:
+            continue
         captured_event_count += 1
         decision = policy.evaluate(event)
         store.record(decision)

@@ -35,6 +35,11 @@ def render() -> None:
     arguments = parse_arguments()
     store = EventStore(arguments.database)
     captured_events = store.timeline()
+    trace_events = [
+        event
+        for event in captured_events
+        if event["kind"] not in {"session_started", "process_stopped"}
+    ]
     events = meaningful_events(captured_events)
     blocked = [event for event in events if event["verdict"] == "block"]
 
@@ -46,7 +51,7 @@ def render() -> None:
     )
 
     left, centre, right = st.columns(3)
-    left.metric("Captured trace events", len(captured_events))
+    left.metric("Captured trace events", len(trace_events))
     centre.metric("Security-relevant events", len(events))
     right.metric("Blocked actions", len(blocked), delta="Contained" if blocked else None)
     st.caption(

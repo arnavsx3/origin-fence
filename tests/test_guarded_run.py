@@ -18,4 +18,5 @@ def test_guarded_run_blocks_protected_fixture(tmp_path: Path) -> None:
 
     assert result.blocked is True
     assert result.captured_event_count > result.security_event_count
+    assert store.timeline("test")[-1]["kind"] == "process_stopped"
     assert any(item["verdict"] == "block" for item in store.timeline("test"))
