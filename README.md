@@ -1,116 +1,95 @@
 # OriginFence
 
-**Runtime guardrails for AI coding agents**
+> **Runtime guardrails for AI coding agents**
 
-OriginFence traces what an AI agent causes on a developer machine and blocks unsafe action chains before sensitive data leaves the device.
+[![CI](https://github.com/arnavsx3/origin-fence/actions/workflows/ci.yml/badge.svg)](https://github.com/arnavsx3/origin-fence/actions/workflows/ci.yml)
 
-> Guard the chain, not just the command.
-
-## The problem
-
-AI coding agents can run commands, install dependencies, read project files, and access the network. A command that appears harmless can spawn child processes that access credentials or make unexpected outbound connections.
-
-Existing permission prompts approve an initial action. OriginFence follows its consequences:
+**OriginFence traces what an AI agent causes on a developer machine and blocks unsafe action chains before sensitive data leaves the device.**
 
 ```text
 AI agent → command → child process → sensitive file → network connection
 ```
 
-## What OriginFence does
+> Guard the chain, not just the command.
 
-- Launches an AI-agent session inside a monitored process tree
-- Tracks command execution, file access, and outbound connection attempts
-- Identifies agent-originated descendant processes
-- Applies deterministic policy rules: `ALLOW`, `ASK`, or `BLOCK`
-- Stops a risky process tree and records the causal chain
-- Displays local, explainable security events in a dashboard
+## Why it matters
 
-## Prototype scope
+AI coding agents can install dependencies, run shell commands, read project files, and connect to the network. An approval for one action does not automatically explain or constrain every process that action launches afterward.
 
-This repository contains a Linux proof of concept focused on one end-to-end scenario:
+OriginFence adds a local runtime checkpoint. It follows an agent-originated process chain, applies deterministic policy, and records an explainable verdict.
 
-1. An agent-originated process starts.
-2. A child script attempts to access a protected file such as `.aws/credentials`, `.env`, or an SSH key.
-3. OriginFence detects the access.
-4. The policy engine blocks the process before an unapproved outbound connection can occur.
-5. The dashboard shows the complete event chain and verdict.
+## What it proves
 
-The prototype is designed for demonstration and research. It is not a replacement for endpoint security, dependency verification, sandboxing, or vendor security updates.
+| Capability | Prototype behaviour |
+| --- | --- |
+| Agent-origin awareness | Launches the monitored command in its own process session |
+| Runtime visibility | Observes `exec`, file-open, and connection syscalls with `strace` |
+| Explainable policy | Evaluates YAML rules as `ALLOW`, `ASK`, or `BLOCK` |
+| Scoped containment | Stops only the monitored process group on a blocking verdict |
+| Local evidence | Stores the causal event timeline in SQLite |
+| Presentation-ready view | Shows verdicts and event details in a Streamlit dashboard |
 
-## Planned architecture
+## The demo
 
-```text
-Agent launcher
-    ↓
-Runtime tracer
-    ↓
-Event normalizer
-    ↓
-Policy engine
-    ↓
-Enforcement service
-    ↓
-SQLite event store + local dashboard
-```
+The repository includes two controlled local scenarios:
 
-## Planned stack
+- **Safe flow**: an agent-originated process reads a public project configuration and receives an `ALLOW` verdict.
+- **Blocked flow**: an agent-originated process attempts to read a deliberately fake credential fixture. OriginFence detects the access, blocks it, and terminates the monitored process tree.
 
-- Python 3.11
-- Streamlit dashboard
-- SQLite
-- `strace` for prototype syscall tracing
-- `psutil` for process-tree management
-- YAML policy files
-- HTML, CSS, and JavaScript dashboard
+No real credentials, malware, or external exfiltration endpoint are used.
 
-## Repository layout
+## Architecture
 
 ```text
-src/originfence/       Guard engine: monitoring, policy, enforcement, storage, web
-config/                Example policy rules
-demo/                  Controlled safe and blocked scenarios
-docs/                  Architecture and prototype boundaries
-tests/                 Automated checks for policy and event handling
+Agent command
+    │
+    ▼
+OriginFence launcher
+    │
+    ▼
+strace runtime monitor ──► normalised events ──► YAML policy engine
+                                                       │
+                                      ┌────────────────┴────────────────┐
+                                      ▼                                 ▼
+                                  ALLOW / ASK                     BLOCK + stop tree
+                                      │                                 │
+                                      └───────────────┬─────────────────┘
+                                                      ▼
+                                       SQLite evidence + Streamlit dashboard
 ```
 
-## Demo policy
-
-```yaml
-protected_paths:
-  - "~/.aws/*"
-  - "~/.ssh/*"
-  - "**/.env"
-
-network:
-  allow:
-    - "registry.npmjs.org"
-  block_unknown_after_sensitive_access: true
-```
-
-## Run the prototype
+## Quick start
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 
-# A harmless agent-originated action
+# Record an approved local action
 .venv/bin/originfence demo safe
 
-# A controlled sensitive-file-access event that OriginFence blocks
+# Record and contain a protected-file access
 .venv/bin/originfence demo blocked
 
-# Inspect the recorded local event timeline
+# Inspect the event timeline
 .venv/bin/originfence dashboard
 ```
 
-The dashboard runs locally at `http://127.0.0.1:8000`. The blocked demo uses
-only a committed fake credential fixture; it does not read real credentials or
-send data to an external endpoint.
+Open the dashboard at `http://127.0.0.1:8000`.
 
-## Status
+## Project layout
 
-🚧 Active hackathon prototype
+```text
+src/originfence/     Runtime monitor, policy engine, enforcement, storage, dashboard
+config/              Example policy rules
+demo/                Safe and blocked proof scenarios with fake fixtures
+docs/                Architecture and demo guidance
+tests/               Automated policy, runtime, dashboard, and CLI checks
+```
+
+## Prototype boundary
+
+OriginFence is a Linux proof of concept built for demonstration and research. It protects only processes it launches and does not claim to replace dependency verification, sandboxing, EDR, or vendor security updates.
 
 ## Team
 
-Built by the OriginFence team for AI-Manthan 2.0.
+Built by the OriginFence team for **AI-Manthan 2.0**.
