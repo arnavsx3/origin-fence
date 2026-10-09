@@ -45,8 +45,9 @@
         document.querySelector('#events').textContent = events.length;
         document.querySelector('#blocked').textContent = events.filter(event => event.verdict === 'block').length;
         if (!events.length) return;
+        const meaningful = events.filter(event => event.verdict !== 'allow' || event.kind !== 'file_open' || event.target?.includes('/demo/'));
         timeline.className = '';
-        timeline.innerHTML = events.map(event => `<article class="event"><small>${event.kind.replace('_', ' ')}</small><div class="target">${event.target || '—'}</div><span class="verdict ${event.verdict}">${event.verdict}</span><div class="reason">${event.reason}</div></article>`).join('');
+        timeline.innerHTML = meaningful.map(event => `<article class="event"><small>${event.kind.replace('_', ' ')}</small><div class="target">${event.target || '—'}</div><span class="verdict ${event.verdict}">${event.verdict}</span><div class="reason">${event.reason}</div></article>`).join('');
       }
       document.querySelector('#refresh').addEventListener('click', refresh);
       refresh();
