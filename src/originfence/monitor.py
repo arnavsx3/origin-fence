@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from originfence.enforcement import stop_process_group
-from originfence.models import Decision, EventKind, RuntimeEvent, Verdict
+from originfence.models import Decision, EventKind, RuntimeEvent, Verdict, is_security_relevant
 from originfence.policy import PolicyEngine
 from originfence.store import EventStore
 
@@ -18,6 +18,7 @@ _EXEC = re.compile(r'execve\("(?P<command>[^"]+)"')
 _OPEN = re.compile(r'openat\([^,]+, "(?P<path>[^"]+)"')
 _IPV4_CONNECT = re.compile(r'sin_addr=inet_addr\("(?P<host>[^"]+)"\)')
 _IPV6_CONNECT = re.compile(r'inet_pton\(AF_INET6, "(?P<host>[^"]+)"')
+_PORT = re.compile(r"sin_port=htons\((?P<port>\d+)\)")
 
 
 def parse_strace_line(session_id: str, line: str) -> RuntimeEvent | None:
@@ -36,11 +37,15 @@ def parse_strace_line(session_id: str, line: str) -> RuntimeEvent | None:
     if "connect(" in line:
         host_match = _IPV4_CONNECT.search(line) or _IPV6_CONNECT.search(line)
         if host_match:
+            port_match = _PORT.search(line)
+            target = host_match.group("host")
+            if port_match:
+                target = f"{target}:{port_match.group('port')}"
             return RuntimeEvent(
                 session_id,
                 EventKind.NETWORK_CONNECT,
                 pid=pid,
-                target=host_match.group("host"),
+                target=target,
             )
     return None
 
@@ -52,7 +57,8 @@ class MonitorResult:
     session_id: str
     return_code: int
     blocked: bool
-    event_count: int
+    captured_event_count: int
+    security_event_count: int
 
 
 def run_guarded_command(
@@ -78,16 +84,19 @@ def run_guarded_command(
         start_new_session=True,
     )
     blocked = False
-    event_count = 0
+    captured_event_count = 0
+    security_event_count = 1
     assert process.stderr is not None
 
     for line in process.stderr:
         event = parse_strace_line(session_id, line)
         if event is None:
             continue
-        event_count += 1
+        captured_event_count += 1
         decision = policy.evaluate(event)
         store.record(decision)
+        if is_security_relevant(event.kind, event.target, decision.verdict):
+            security_event_count += 1
         if decision.verdict is Verdict.BLOCK and not blocked:
             blocked = True
             stop_process_group(process.pid)
@@ -99,6 +108,7 @@ def run_guarded_command(
                 metadata={"trigger": event.target},
             )
             store.record(Decision(Verdict.BLOCK, "Stopped the agent-originated process tree.", stopped))
+            security_event_count += 1
 
     return_code = process.wait()
-    return MonitorResult(session_id, return_code, blocked, event_count)
+    return MonitorResult(session_id, return_code, blocked, captured_event_count, security_event_count)

@@ -9,6 +9,7 @@ from typing import Any
 
 import streamlit as st
 
+from originfence.models import is_security_relevant
 from originfence.store import EventStore
 
 
@@ -25,9 +26,7 @@ def meaningful_events(events: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         event
         for event in events
-        if event["verdict"] != "allow"
-        or event["kind"] != "file_open"
-        or "/demo/" in str(event.get("target", ""))
+        if is_security_relevant(event["kind"], event.get("target"), event["verdict"])
     ]
 
 
@@ -35,7 +34,8 @@ def render() -> None:
     """Render the local, presentation-ready event dashboard."""
     arguments = parse_arguments()
     store = EventStore(arguments.database)
-    events = meaningful_events(store.timeline())
+    captured_events = store.timeline()
+    events = meaningful_events(captured_events)
     blocked = [event for event in events if event["verdict"] == "block"]
 
     st.set_page_config(page_title="OriginFence", page_icon="🛡️", layout="wide")
@@ -46,9 +46,13 @@ def render() -> None:
     )
 
     left, centre, right = st.columns(3)
-    left.metric("Observed events", len(events))
-    centre.metric("Blocked actions", len(blocked), delta="Contained" if blocked else None)
-    right.metric("Evidence storage", "Local SQLite")
+    left.metric("Captured trace events", len(captured_events))
+    centre.metric("Security-relevant events", len(events))
+    right.metric("Blocked actions", len(blocked), delta="Contained" if blocked else None)
+    st.caption(
+        "Captured events include expected Python and operating-system file opens. "
+        "The timeline highlights the security-relevant agent activity and policy verdicts."
+    )
 
     st.divider()
     header, refresh = st.columns([5, 1])

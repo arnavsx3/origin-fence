@@ -35,6 +35,7 @@ The repository includes two controlled local scenarios:
 
 - **Safe flow**: an agent-originated process reads a public project configuration and receives an `ALLOW` verdict.
 - **Blocked flow**: an agent-originated process attempts to read a deliberately fake credential fixture. OriginFence detects the access, blocks it, and terminates the monitored process tree.
+- **Network-blocked flow**: an agent-originated process attempts an unapproved local outbound connection. OriginFence detects the `connect` syscall, blocks it, and terminates the monitored process tree.
 
 No real credentials, malware, or external exfiltration endpoint are used.
 
@@ -70,11 +71,19 @@ python3 -m venv .venv
 # Record and contain a protected-file access
 .venv/bin/originfence demo blocked
 
+# Record and contain an unapproved outbound connection attempt
+.venv/bin/originfence demo network-blocked
+
 # Inspect the event timeline
 .venv/bin/originfence dashboard
 ```
 
 Open the dashboard at `http://127.0.0.1:8000`.
+
+The terminal reports every parsed syscall event. The dashboard separately shows
+that **captured trace-event** total and the smaller **security-relevant** total,
+which filters expected interpreter and operating-system file opens from the
+presentation timeline.
 
 ## Project layout
 

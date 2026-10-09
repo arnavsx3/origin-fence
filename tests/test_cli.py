@@ -1,4 +1,4 @@
-from originfence.cli import build_parser
+from originfence.cli import _demo_command, build_parser
 
 
 def test_cli_accepts_blocked_demo() -> None:
@@ -13,3 +13,9 @@ def test_cli_accepts_dashboard_port() -> None:
 
     assert arguments.command == "dashboard"
     assert arguments.port == 9090
+
+
+def test_network_demo_maps_to_python_module_name() -> None:
+    _, command = _demo_command("network-blocked")
+
+    assert command[-1].endswith("network_blocked_agent.py")

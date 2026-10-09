@@ -21,7 +21,7 @@ def test_parses_connect_event() -> None:
 
     assert event is not None
     assert event.kind is EventKind.NETWORK_CONNECT
-    assert event.target == "127.0.0.1"
+    assert event.target == "127.0.0.1:443"
 
 
 def test_ignores_unrelated_syscalls() -> None:

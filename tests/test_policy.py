@@ -37,3 +37,14 @@ def test_blocks_unknown_network_after_sensitive_access() -> None:
     )
 
     assert decision.verdict is Verdict.BLOCK
+
+
+def test_blocks_an_unapproved_network_connection_without_file_access() -> None:
+    engine = PolicyEngine(PolicyConfig(block_unapproved_network=True))
+
+    decision = engine.evaluate(
+        RuntimeEvent("demo", EventKind.NETWORK_CONNECT, target="127.0.0.1:65534")
+    )
+
+    assert decision.verdict is Verdict.BLOCK
+    assert "outbound connection" in decision.reason

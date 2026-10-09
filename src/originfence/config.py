@@ -43,4 +43,5 @@ def load_policy(path: Path) -> PolicyConfig:
         block_unknown_after_sensitive_access=bool(
             network.get("block_unknown_after_sensitive_access", True)
         ),
+        block_unapproved_network=bool(network.get("block_unapproved_network", False)),
     )

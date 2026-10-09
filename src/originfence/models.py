@@ -26,6 +26,13 @@ class Verdict(StrEnum):
     BLOCK = "block"
 
 
+def is_security_relevant(kind: str | EventKind, target: str | None, verdict: str | Verdict) -> bool:
+    """Keep dashboard and terminal summaries focused on meaningful evidence."""
+    return verdict != Verdict.ALLOW and verdict != Verdict.ALLOW.value or (
+        kind != EventKind.FILE_OPEN and kind != EventKind.FILE_OPEN.value
+    ) or "/demo/" in (target or "")
+
+
 @dataclass(slots=True)
 class RuntimeEvent:
     """One observed action from a monitored agent-originated process tree."""

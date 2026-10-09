@@ -5,3 +5,4 @@ network:
   allowed_hosts:
     - "registry.npmjs.org"
   block_unknown_after_sensitive_access: true
+  block_unapproved_network: true

@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from originfence.config import load_policy
+from originfence.models import is_security_relevant
 from originfence.monitor import run_guarded_command
 from originfence.policy import PolicyEngine
 from originfence.store import EventStore
@@ -25,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("target", nargs=argparse.REMAINDER, help="command to execute after --")
 
     demo = subcommands.add_parser("demo", help="run a controlled local demo")
-    demo.add_argument("scenario", choices=["safe", "blocked"])
+    demo.add_argument("scenario", choices=["safe", "blocked", "network-blocked"])
     demo.add_argument("--database", type=Path, default=Path("data/originfence.sqlite3"))
 
     dashboard = subcommands.add_parser("dashboard", help="open the Streamlit event dashboard")
@@ -37,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _demo_command(scenario: str) -> tuple[Path, list[str]]:
     root = Path(__file__).resolve().parents[2]
     policy = root / "demo" / "policy.yaml"
-    script = root / "demo" / f"{scenario}_agent.py"
+    script = root / "demo" / f"{scenario.replace('-', '_')}_agent.py"
     return policy, [sys.executable, str(script)]
 
 
@@ -45,6 +46,8 @@ def _print_timeline(store: EventStore, session_id: str) -> None:
     print("\nOriginFence event timeline")
     print("=" * 72)
     for item in store.timeline(session_id):
+        if not is_security_relevant(item["kind"], item["target"], item["verdict"]):
+            continue
         print(f"{item['kind']:18} {item['verdict'].upper():5}  {item['target'] or ''}")
         print(f"  {item['reason']}")
 
@@ -95,7 +98,11 @@ def main(argv: list[str] | None = None) -> None:
     result = run_guarded_command(command, policy, store)
     _print_timeline(store, result.session_id)
     label = "BLOCKED" if result.blocked else "ALLOWED"
-    print(f"\nVerdict: {label} | session={result.session_id} | observed_events={result.event_count}")
+    print(
+        f"\nVerdict: {label} | session={result.session_id} | "
+        f"captured_trace_events={result.captured_event_count} | "
+        f"security_events={result.security_event_count}"
+    )
 
 
 if __name__ == "__main__":

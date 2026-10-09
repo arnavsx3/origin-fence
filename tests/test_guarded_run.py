@@ -17,4 +17,5 @@ def test_guarded_run_blocks_protected_fixture(tmp_path: Path) -> None:
     result = run_guarded_command([sys.executable, str(script)], policy, store, session_id="test")
 
     assert result.blocked is True
+    assert result.captured_event_count > result.security_event_count
     assert any(item["verdict"] == "block" for item in store.timeline("test"))

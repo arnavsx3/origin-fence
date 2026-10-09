@@ -16,6 +16,7 @@ class PolicyConfig:
     protected_paths: list[str] = field(default_factory=list)
     allowed_hosts: list[str] = field(default_factory=list)
     block_unknown_after_sensitive_access: bool = True
+    block_unapproved_network: bool = False
 
 
 class PolicyEngine:
@@ -50,6 +51,9 @@ class PolicyEngine:
         target = event.target or ""
         if self._host_is_allowed(target):
             return Decision(Verdict.ALLOW, f"Destination is allowlisted: {target}", event)
+
+        if self.config.block_unapproved_network:
+            return Decision(Verdict.BLOCK, f"Blocked unapproved outbound connection: {target}", event)
 
         if (
             self.config.block_unknown_after_sensitive_access
