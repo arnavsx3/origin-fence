@@ -63,6 +63,16 @@ SQLite event store + local dashboard
 - YAML policy files
 - HTML, CSS, and JavaScript dashboard
 
+## Repository layout
+
+```text
+src/originfence/       Guard engine: monitoring, policy, enforcement, storage, web
+config/                Example policy rules
+demo/                  Controlled safe and blocked scenarios
+docs/                  Architecture and prototype boundaries
+tests/                 Automated checks for policy and event handling
+```
+
 ## Demo policy
 
 ```yaml

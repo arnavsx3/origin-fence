@@ -1,0 +1,11 @@
+# Example policy for the OriginFence proof of concept.
+# Copy this file to config/policy.yaml before changing local rules.
+protected_paths:
+  - "**/.aws/credentials"
+  - "**/.ssh/id_*"
+  - "**/.env"
+
+network:
+  allowed_hosts:
+    - "registry.npmjs.org"
+  block_unknown_after_sensitive_access: true

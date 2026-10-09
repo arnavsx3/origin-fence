@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime data
+data/*.db
+data/*.sqlite*
+data/*.jsonl
+
+# Demo secrets must never be committed
+demo/fixtures/.aws/
+demo/fixtures/.ssh/
+demo/fixtures/.env
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
