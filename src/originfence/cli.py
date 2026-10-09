@@ -54,30 +54,33 @@ def main(argv: list[str] | None = None) -> None:
     arguments = build_parser().parse_args(argv)
     if arguments.command == "dashboard":
         dashboard = Path(__file__).resolve().parents[1] / "originfence" / "dashboard.py"
-        subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "streamlit",
-                "run",
-                str(dashboard),
-                "--server.address",
-                "127.0.0.1",
-                "--server.port",
-                str(arguments.port),
-                "--server.headless=true",
-                "--browser.gatherUsageStats=false",
-                "--",
-                "--database",
-                str(arguments.database),
-            ],
-            check=False,
-            env={
-                **os.environ,
-                "STREAMLIT_SERVER_HEADLESS": "true",
-                "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
-            },
-        )
+        try:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "streamlit",
+                    "run",
+                    str(dashboard),
+                    "--server.address",
+                    "127.0.0.1",
+                    "--server.port",
+                    str(arguments.port),
+                    "--server.headless=true",
+                    "--browser.gatherUsageStats=false",
+                    "--",
+                    "--database",
+                    str(arguments.database),
+                ],
+                check=False,
+                env={
+                    **os.environ,
+                    "STREAMLIT_SERVER_HEADLESS": "true",
+                    "STREAMLIT_BROWSER_GATHER_USAGE_STATS": "false",
+                },
+            )
+        except KeyboardInterrupt:
+            print("\nOriginFence dashboard stopped.")
         return
     if arguments.command == "demo":
         policy_path, command = _demo_command(arguments.scenario)
